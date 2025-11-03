@@ -23,8 +23,25 @@ if (!channelId) {
   process.exit(1);
 }
 
-// Create bot instance
-const bot = new TelegramBot(token, { polling: true });
+// Webhook/polling mode
+const isWebhookMode = String(process.env.WEBHOOK_MODE || '').toLowerCase() === 'true';
+const webhookUrl = process.env.WEBHOOK_URL; // e.g. https://your-app.vercel.app/api/telegram
+const webhookSecret = process.env.WEBHOOK_SECRET || '';
+
+let bot;
+if (isWebhookMode) {
+  bot = new TelegramBot(token, { webHook: { port: 0 } });
+  if (webhookUrl) {
+    bot.setWebHook(webhookUrl, webhookSecret ? { secret_token: webhookSecret } : undefined)
+      .then(() => console.log('Webhook set to', webhookUrl))
+      .catch((err) => console.log('Failed to set webhook:', err && err.message ? err.message : err));
+  } else {
+    console.log('WEBHOOK_MODE enabled but WEBHOOK_URL is not set.');
+  }
+} else {
+  // Local development via long-polling
+  bot = new TelegramBot(token, { polling: true });
+}
 
 // Простейшее состояние диалога в памяти процесса (используется только для локального dev)
 // В проде по вебхуку нельзя полагаться на память — используем callback_data с ключом
@@ -135,4 +152,6 @@ bot.on('polling_error', (error) => {
 });
 
 // Log bot startup
-console.log('Bot is running...');
+console.log(isWebhookMode ? 'Bot is in webhook mode…' : 'Bot is running (polling)…');
+
+module.exports = { bot };
