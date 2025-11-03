@@ -43,9 +43,8 @@ if (isWebhookMode) {
   bot = new TelegramBot(token, { polling: true });
 }
 
-// Простейшее состояние диалога в памяти процесса (используется только для локального dev)
-// В проде по вебхуку нельзя полагаться на память — используем callback_data с ключом
-const awaitingKeyword = Object.create(null);
+// Не полагаемся на память процесса в проде
+const awaitingKeyword = Object.create(null); // используется только локально
 
 // Handle /start command
 bot.onText(/\/start/, (msg) => {
@@ -55,10 +54,6 @@ bot.onText(/\/start/, (msg) => {
     `Напиши ключевое слово из видео, и я сразу пришлю тебе твой бонус.`;
 
   bot.sendMessage(chatId, welcome, { disable_web_page_preview: true });
-
-  if (msg.from && msg.from.id) {
-    awaitingKeyword[msg.from.id] = true;
-  }
 });
 
 // Универсальный обработчик сообщений
@@ -70,18 +65,9 @@ bot.on('message', async (msg) => {
   // Пропускаем команды (их обрабатывает onText)
   if (!text || text.startsWith('/')) return;
 
-  // Если ждём ключевое слово — сохраняем его, а отправку бонуса делаем по кнопке "Подписался"
-  if (userId && awaitingKeyword[userId]) {
-    const keyword = text.toLowerCase();
-
-    if (!leadMagnets[keyword]) {
-      await bot.sendMessage(chatId, 'Я не узнал ключевое слово. Отправь слово из видео (например: n8n).');
-      return;
-    }
-    // Отправляем шаг с подпиской + кнопка. Кодируем ключевое слово в callback_data,
-    // чтобы не зависеть от памяти процесса (stateless вебхуки)
-    const subscribeStep =
-      `Остался последний шаг! Нужно быть подписанным на телеграм‑канал: ${channelLink}`;
+  const keyword = text.toLowerCase();
+  if (leadMagnets[keyword]) {
+    const subscribeStep = `Остался последний шаг! Нужно быть подписанным на телеграм‑канал: ${channelLink}`;
     await bot.sendMessage(chatId, subscribeStep, {
       disable_web_page_preview: true,
       reply_markup: {
@@ -91,8 +77,7 @@ bot.on('message', async (msg) => {
     return;
   }
 
-  // Если ключ не ожидался — подскажем:
-  await bot.sendMessage(chatId, 'Нажми /start и следуй инструкции, чтобы получить бонус.');
+  await bot.sendMessage(chatId, 'Я не узнал ключевое слово. Отправь слово из видео (например: n8n).');
 });
 
 // Обработка нажатия на кнопку "Подписался"
@@ -138,8 +123,7 @@ bot.on('callback_query', async (query) => {
     const link = leadMagnets[keyword];
     await bot.sendMessage(chatId, `Держи твой бонус: ${link}`, { disable_web_page_preview: false });
 
-    // Сбрасываем состояние
-    awaitingKeyword[userId] = false;
+    // Готово
   } catch (e) {
     console.log('getChatMember error:', (e && e.message) || e);
     await bot.sendMessage(chatId, 'Не удалось проверить подписку. Убедись, что бот — админ канала и попробуй ещё раз.');
