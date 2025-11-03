@@ -1,0 +1,17 @@
+{
+  "name": "mindgater_bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for MindGate",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["telegram", "bot", "mindgate"],
+  "author": "MindGate",
+  "license": "MIT"
+}
