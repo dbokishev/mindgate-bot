@@ -23,8 +23,14 @@ module.exports = async (req, res) => {
       console.log('Incoming update:', { kind, chatId, hasText: Boolean(update.message?.text), hasData: Boolean(update.callback_query?.data) });
     } catch (_) {}
 
-    await bot.processUpdate(update);
-    return res.status(200).send('OK');
+    // Respond immediately to Telegram to avoid timeouts; process update asynchronously
+    res.status(200).send('OK');
+    try {
+      await bot.processUpdate(update);
+    } catch (e) {
+      console.error('processUpdate error:', e && e.message ? e.message : e);
+    }
+    return;
   } catch (err) {
     console.error('Webhook handler error:', err && err.message ? err.message : err);
     return res.status(500).send('error');
