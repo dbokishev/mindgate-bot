@@ -128,7 +128,7 @@ bot.on('callback_query', async (query) => {
         {
           disable_web_page_preview: true,
           reply_markup: {
-            inline_keyboard: [[{ text: 'Теперь точно подписан!', callback_data: 'confirm_subscribed' }]],
+            inline_keyboard: [[{ text: 'Теперь точно подписан!', callback_data: `confirm_subscribed:${keyword}` }]],
           },
         }
       );
